@@ -1,10 +1,15 @@
 package uz.pdp.cambridgelc.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import uz.pdp.cambridgelc.entity.course.CourseEntity;
 import uz.pdp.cambridgelc.entity.dto.CourseDto;
-import uz.pdp.cambridgelc.service.CourseService;
+import uz.pdp.cambridgelc.service.course.CourseService;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,38 +20,57 @@ import java.util.UUID;
 public class CourseController {
     private final CourseService courseService;
 
-    @PostMapping("/admin/add-course")
-    public CourseEntity addCourse(
-            @RequestBody CourseDto courseDto
+    @PostMapping("/add")
+    @PreAuthorize(value = "hasRole('ADMIN')")
+    public ResponseEntity<CourseEntity> addCourse(
+            @Valid @RequestBody CourseDto courseDto,
+            BindingResult bindingResult
     ) {
-        return courseService.addCourse(courseDto);
+        return ResponseEntity.ok(courseService.addCourse(courseDto, bindingResult));
     }
-    @DeleteMapping("/admin/delete-course")
-    public void deleteCourse(
+
+    @DeleteMapping("/delete")
+    @PreAuthorize(value = "hasRole('ADMIN')")
+    public ResponseEntity<HttpStatus> deleteCourse(
             @RequestParam String title
-    ){
+    ) {
         courseService.deleteByTitle(title);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
+
     @GetMapping("/getAll")
-    public List<CourseEntity> getAll(
-            @RequestParam int page,
-            @RequestParam int size
-    ){
-        return courseService.getAll(page, size);
+    @PreAuthorize(value = "permitAll()")
+    public ResponseEntity<List<CourseEntity>> getAll(
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(courseService.getToExcel(page, size));
     }
-    @PostMapping("/support/edit-course/{id}")
-    public CourseEntity editCourse(
+
+    @PutMapping("/edit/{id}")
+    @PreAuthorize(value = "hasAnyRole('ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<CourseEntity> editCourse(
             @PathVariable UUID id,
-            @RequestBody CourseDto courseDto
-    ){
-        return courseService.updateSupport(courseDto,id);
+            @Valid @RequestBody CourseDto courseDto,
+            BindingResult bindingResult
+    ) {
+        return ResponseEntity.ok(courseService.updateSupport(courseDto, id, bindingResult));
     }
-    @PutMapping("/teacher/edit-title/{courseId}")
-//    @PreAuthorize(value = "hasRole('ROLE_ADMIN')")
-    public CourseEntity editTitle(
+
+    @PutMapping("/edit-title/{courseId}")
+    @PreAuthorize(value = "hasRole('TEACHER')")
+    public ResponseEntity<CourseEntity> editTitle(
             @PathVariable UUID courseId,
             @RequestParam String title
-    ){
-        return courseService.updateTeacher(title,courseId);
+    ) {
+        return ResponseEntity.ok(courseService.updateTeacher(title, courseId));
+    }
+
+    @GetMapping("/getCoursesByLevel")
+    @PreAuthorize(value = "permitAll()")
+    public ResponseEntity<List<CourseEntity>> getCoursesByLevel(
+            @RequestParam String level
+    ) {
+        return ResponseEntity.ok(courseService.getCoursesByLevel(level));
     }
 }

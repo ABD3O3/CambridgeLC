@@ -13,9 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import uz.pdp.cambridgelc.filter.JwtFilterToken;
-import uz.pdp.cambridgelc.service.AuthService;
-import uz.pdp.cambridgelc.service.AuthenticationService;
-import uz.pdp.cambridgelc.service.JwtService;
+import uz.pdp.cambridgelc.service.authUser.AuthService;
+import uz.pdp.cambridgelc.service.authUser.AuthenticationService;
+import uz.pdp.cambridgelc.service.authUser.JwtService;
 
 @Configuration
 @EnableWebSecurity
@@ -26,14 +26,16 @@ public class SecurityConfig {
     private final AuthService authService;
     private final AuthenticationService authenticationService;
     private final PasswordEncoder passwordEncoder;
+    String[] adminOnly = new String[]{"/api/v1/user/addStudent","/api/v1/user/addTeacher","/api/v1/user/addSupport"};
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf().disable()
                 .authorizeHttpRequests((requests) -> requests
-//                        .requestMatchers("/api/v1/course/teacher/**").permitAll()
-//                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .anyRequest().permitAll())
+                        .requestMatchers("/api/v1/auth/**","/api/v1/user/**").permitAll()
+                        .requestMatchers(adminOnly).hasAnyRole("ADMIN","SUPER_ADMIN")
+                        .requestMatchers("/api/v1/user/addAdmin").hasRole("SUPER_ADMIN")
+                        .anyRequest().authenticated())
                 .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new JwtFilterToken(authenticationService,jwtService),
                         UsernamePasswordAuthenticationFilter.class)

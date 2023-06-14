@@ -1,7 +1,6 @@
 package uz.pdp.cambridgelc.entity.user;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -20,29 +19,26 @@ import java.util.List;
 @Setter
 @Builder
 public class UserEntity extends BaseEntity implements UserDetails {
-    @NotBlank(message = "Full name cannot be empty")
     private String fullName;
     private Integer age;
-    @NotBlank(message = "Password cannot be empty")
     private String password;
-    @NotBlank(message = "Phone number cannot be empty")
     @Column(unique = true)
     private String username;
-    private Integer coins;
+    private Integer credits;
     private Integer solvedTasks;
-    private Boolean isFailed;
+    private Boolean isOut;
     @Enumerated(EnumType.STRING)
     private List<UserRole> roles;
     @Enumerated(EnumType.STRING)
     private UserStatus status;
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     private GroupEntity group;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<GrantedAuthority> authorities = new ArrayList<>();
         roles.forEach((role) -> {
-                authorities.add(new SimpleGrantedAuthority(role.name()));
+            authorities.add(new SimpleGrantedAuthority(role.name()));
         });
         return authorities;
     }
